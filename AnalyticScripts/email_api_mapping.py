@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 """
-Email Extraction Script for Cascade Analytics
+Email API Mapping Module for Cascade Analytics
 
-This script fetches unique email addresses and their associated API keys from the UserPageAnalytics API
-to be used with the CascadeLinesPerUser.py script.
+This module provides functions for retrieving, saving, and reading email-to-API-key mappings
+from the Cascade Analytics API. These mappings can be used across multiple Windsurf Analytics projects.
 
 By default, it fetches data from the last month, but you can customize the date range
 using command-line arguments.
+
+Typical usage:
+    - As a standalone script: python email_api_mapping.py --output my_emails.json
+    - As an imported module: from AnalyticScripts.email_api_mapping import fetch_email_api_mapping
+
+Requires:
+    - SERVICE_KEY environment variable to be set (typically in .env file)
+    - Python 3.6+ with requests and python-dotenv packages
 """
 
 import os
@@ -17,12 +25,54 @@ import argparse
 from dotenv import load_dotenv
 from typing import List, Set, Dict
 
+# Define output directory
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'output')
+
+# Ensure output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 # Load environment variables from .env file
 load_dotenv()
 
-def get_unique_emails(start_timestamp: str, end_timestamp: str) -> Dict[str, str]:
+def fetch_email_api_mapping(start_date=None, end_date=None) -> Dict[str, str]:
     """
-    Get unique emails and their associated API keys from the UserPageAnalytics API.
+    Get unique emails and their associated API keys from the Cascade Analytics API.
+    
+    Args:
+        start_date: Start date in YYYY-MM-DD format (e.g., "2025-01-01") or None for 30 days ago
+        end_date: End date in YYYY-MM-DD format (e.g., "2025-01-31") or None for today
+    
+    Returns:
+        Dictionary of unique email addresses as keys and API keys as values
+    
+    Raises:
+        ValueError: If SERVICE_KEY is not found or date format is invalid
+        requests.exceptions.RequestException: If the API request fails
+    """
+    # Process dates
+    now = datetime.datetime.now()
+    
+    if start_date:
+        start_date = parse_date(start_date)
+    else:
+        start_date = now - datetime.timedelta(days=30)
+        
+    if end_date:
+        end_date = parse_date(end_date)
+    else:
+        end_date = now
+        
+    # Convert to ISO format with UTC timezone
+    start_timestamp = start_date.strftime("%Y-%m-%dT00:00:00Z")
+    end_timestamp = end_date.strftime("%Y-%m-%dT23:59:59Z")
+    
+    print(f"Fetching user data from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}...")
+    
+    return _query_analytics_api(start_timestamp, end_timestamp)
+
+def _query_analytics_api(start_timestamp: str, end_timestamp: str) -> Dict[str, str]:
+    """
+    Internal function to query the UserPageAnalytics API for email-API key mappings.
     
     Args:
         start_timestamp: Start time in ISO format (e.g., "2025-01-01T00:00:00Z")
@@ -48,7 +98,7 @@ def get_unique_emails(start_timestamp: str, end_timestamp: str) -> Dict[str, str
     }
     
     try:
-        print(f"Fetching user data from {start_timestamp} to {end_timestamp}...")
+        print(f"Querying API for data from {start_timestamp} to {end_timestamp}...")
         response = requests.post(url, json=payload, headers=headers)
         response.raise_for_status()
         data = response.json()
@@ -87,18 +137,30 @@ def get_unique_emails(start_timestamp: str, end_timestamp: str) -> Dict[str, str
         print(f"Error making request: {e}")
         return {}
 
-def save_emails_to_file(email_api_map: Dict[str, str], filename: str = "unique_emails.json") -> None:
+def save_emails_to_json(email_api_map: Dict[str, str], output_file: str = None) -> str:
     """
     Save the unique email:api_key pairs to a JSON file.
     
     Args:
         email_api_map: Dictionary of email addresses to API keys
-        filename: Output filename
+        output_file: Output filename (if None, generates a name with current date)
+    
+    Returns:
+        Path to the saved file
+    
+    Raises:
+        IOError: If the file cannot be written
     """
-    with open(filename, "w") as f:
+    if output_file is None:
+        # Generate filename with current date
+        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        output_file = os.path.join(OUTPUT_DIR, f"email_api_mapping_{current_date}.json")
+        
+    with open(output_file, "w") as f:
         json.dump(email_api_map, f, indent=2)
     
-    print(f"Saved {len(email_api_map)} unique email-API key pairs to {filename}")
+    print(f"Saved {len(email_api_map)} unique email-API key pairs to {output_file}")
+    return output_file
 
 def parse_date(date_str: str) -> datetime.datetime:
     """
@@ -126,6 +188,35 @@ def get_default_start_date() -> datetime.datetime:
     # Go back 1 month (approximately 30 days)
     return now - datetime.timedelta(days=30)
 
+def read_api_keys_from_json(json_file_path: str) -> Dict[str, str]:
+    """
+    Read API keys and emails from JSON file.
+    
+    Args:
+        json_file_path: Path to JSON file containing email:api_key pairs
+        
+    Returns:
+        Dictionary mapping API keys to emails (inverted from the file format)
+    
+    Raises:
+        FileNotFoundError: If the file does not exist
+        json.JSONDecodeError: If the file is not valid JSON
+    """
+    api_key_email_map = {}
+    
+    try:
+        print(f"Reading JSON file: {json_file_path}")
+        with open(json_file_path, 'r') as json_file:
+            # The JSON has email as key and api_key as value
+            # We invert this for some use cases
+            email_api_map = json.load(json_file)
+            api_key_email_map = {api_key: email for email, api_key in email_api_map.items()}
+            print(f"Loaded {len(api_key_email_map)} API keys from JSON file")
+    except Exception as e:
+        print(f"Error reading JSON file: {e}")
+    
+    return api_key_email_map
+
 def main():
     """
     Main function to fetch and save unique email:api_key pairs.
@@ -136,36 +227,17 @@ def main():
                         help='Start date in YYYY-MM-DD format (default: 1 month ago)')
     parser.add_argument('--end-date', type=str, 
                         help='End date in YYYY-MM-DD format (default: today)')
-    parser.add_argument('--output', type=str, default="unique_emails.json",
-                        help='Output JSON file name (default: unique_emails.json)')
+    parser.add_argument('--output', type=str,
+                        help='Output JSON file name (default: email_api_mapping_YYYY-MM-DD.json)')
     args = parser.parse_args()
     
-    # Set time range
-    now = datetime.datetime.now()
+    print("Starting email-to-API-key mapping extraction...")
     
-    # Process start date
-    if args.start_date:
-        start_date = parse_date(args.start_date)
-    else:
-        start_date = get_default_start_date()
-    
-    # Process end date
-    if args.end_date:
-        end_date = parse_date(args.end_date)
-    else:
-        end_date = now
-    
-    # Convert to ISO format with UTC timezone
-    start_timestamp = start_date.strftime("%Y-%m-%dT00:00:00Z")
-    end_timestamp = end_date.strftime("%Y-%m-%dT23:59:59Z")
-    
-    print("Starting unique email and API key extraction...")
-    print(f"Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}")
-    
-    email_api_map = get_unique_emails(start_timestamp, end_timestamp)
+    # Fetch email-to-API-key mapping
+    email_api_map = fetch_email_api_mapping(args.start_date, args.end_date)
     
     if email_api_map:
-        save_emails_to_file(email_api_map, args.output)
+        output_file = save_emails_to_json(email_api_map, args.output)
         
         # Print sample of email:api_key pairs (up to 5)
         sample_items = list(email_api_map.items())[:5]

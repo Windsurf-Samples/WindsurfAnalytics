@@ -3,8 +3,8 @@
 Cascade Credit Usage Workflow Orchestrator
 
 This script orchestrates the complete credit usage monitoring workflow by running:
-1. get_unique_emails.py - To fetch API keys and emails
-2. cascade_usage_analyzer.py - To analyze usage data
+1. AnalyticScripts.email_api_mapping - To fetch API keys and emails
+2. AnalyticScripts.cascade_usage_analyzer - To analyze usage data
 3. credit_usage_monitor.py - To identify users approaching credit limits
 """
 
@@ -14,6 +14,12 @@ import argparse
 import subprocess
 from datetime import datetime
 import re
+
+# Define output directory
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'output')
+
+# Ensure output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Orchestrate the complete Cascade credit usage workflow')
@@ -87,20 +93,21 @@ def main():
     
     # Generate output filenames with timestamps
     timestamp = datetime.now().strftime("%Y-%m-%d")
-    emails_json = args.emails_file or os.path.join(args.output_dir, f"unique_emails_{timestamp}.json")
+    emails_json = args.emails_file or os.path.join(OUTPUT_DIR, f"email_api_mapping_{timestamp}.json")
     
     # Step 1: Get unique emails and API keys (unless skipped)
     if not args.skip_emails:
-        # Find the path to get_unique_emails.py
-        get_emails_script = "../TeamUsage.py/get_unique_emails.py"
-        if not os.path.exists(get_emails_script):
-            print(f"Warning: Could not find {get_emails_script}")
-            get_emails_script = "get_unique_emails.py"
-            if not os.path.exists(get_emails_script):
-                print(f"Error: Could not find get_unique_emails.py script")
-                sys.exit(1)
-        
-        email_cmd = ["python3", get_emails_script]
+        # Use the email_api_mapping module from AnalyticScripts
+        try:
+            # Try to import the module to verify it exists
+            import sys
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from AnalyticScripts import email_api_mapping
+            email_cmd = ["python3", "-m", "AnalyticScripts.email_api_mapping"]  
+        except ImportError:
+            print("Error: Could not import AnalyticScripts.email_api_mapping module")
+            print("Make sure the AnalyticScripts directory is in your Python path")
+            sys.exit(1)
         if args.start_date:
             email_cmd.extend(["--start-date", args.start_date])
         if args.end_date:
@@ -120,7 +127,18 @@ def main():
     summary_file = args.summary_file
     
     if not args.skip_analysis:
-        analyzer_cmd = ["python3", "cascade_usage_analyzer.py", "--json-file", emails_json]
+        # Use the cascade_usage_analyzer module from AnalyticScripts
+        try:
+            # Try to import the module to verify it exists
+            import sys
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from AnalyticScripts import cascade_usage_analyzer
+            analyzer_cmd = ["python3", "-m", "AnalyticScripts.cascade_usage_analyzer", "--json-file", emails_json]
+        except ImportError:
+            print("Error: Could not import AnalyticScripts.cascade_usage_analyzer module")
+            print("Make sure the AnalyticScripts directory is in your Python path")
+            sys.exit(1)
+            
         if args.start_date:
             analyzer_cmd.extend(["--start-date", args.start_date])
         if args.end_date:

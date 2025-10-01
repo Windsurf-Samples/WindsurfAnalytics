@@ -17,7 +17,7 @@ These Python scripts allow you to collect and analyze Cascade usage data, produc
 
 ## End-to-End Workflow
 1. **Configure**: Add service key to the `.env` file
-2. **Extract Emails** (Optional): Run `python3 get_unique_emails.py` to automatically fetch user emails
+2. **Extract Emails** (Optional): Run `python3 -m AnalyticScripts.email_api_mapping` to automatically fetch user emails
    - Use `--start-date` and `--end-date` to customize the date range
 3. **Collect**: Run `python3 CascadeLinesPerUser.py` with desired options
    - Use `--limit` or `--email` to filter which users to process
@@ -27,31 +27,31 @@ These Python scripts allow you to collect and analyze Cascade usage data, produc
 
 ## Scripts
 
-### STEP 1: get_unique_emails.py (Optional)
+### STEP 1: email_api_mapping.py (Optional)
 **Email Extraction**
 
 #### What it does:
 - Connects to Codeium's UserPageAnalytics API using your service key
 - Fetches all user data for the specified time period
-- Extracts a list of unique email addresses
-- Saves them to `unique_emails.json`
+- Extracts a list of unique email addresses and their associated API keys
+- Saves them to `email_api_mapping_YYYY-MM-DD.json`
 
 #### How to run:
 ```bash
 # Default: Fetch emails from the last month
-python3 get_unique_emails.py
+python3 -m AnalyticScripts.email_api_mapping
 
 # Specify a custom date range
-python3 get_unique_emails.py --start-date 2025-08-01 --end-date 2025-09-01
+python3 -m AnalyticScripts.email_api_mapping --start-date 2025-08-01 --end-date 2025-09-01
 
 # Specify a custom output file
-python3 get_unique_emails.py --output custom_emails.json
+python3 -m AnalyticScripts.email_api_mapping --output custom_emails.json
 ```
 
 #### Command-line options:
 - `--start-date`: Start date in YYYY-MM-DD format (default: 1 month ago)
 - `--end-date`: End date in YYYY-MM-DD format (default: today)
-- `--output`: Output JSON file name (default: unique_emails.json)
+- `--output`: Output JSON file name (default: email_api_mapping_YYYY-MM-DD.json)
 
 ### STEP 2: CascadeLinesPerUser.py
 **API Data Collection**
@@ -116,7 +116,7 @@ python3 generate_csv_reports.py
 ```
 
 ## Output Files
-- `unique_emails.json` - List of unique email addresses (from get_unique_emails.py)
+- `email_api_mapping_YYYY-MM-DD.json` - Mapping of email addresses to API keys (from email_api_mapping.py)
 - `cascade_analytics_results.json` - Raw API data
 - `daily_user_analytics_YYYYMMDD.csv` - Daily report
 - `aggregated_user_analytics_YYYYMMDD.csv` - Aggregated report

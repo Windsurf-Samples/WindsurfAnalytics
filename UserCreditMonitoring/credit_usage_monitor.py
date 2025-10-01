@@ -29,6 +29,12 @@ import sys
 import glob
 from datetime import datetime
 
+# Define output directory
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'output')
+
+# Ensure output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 def parse_arguments():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description='Monitor Cascade credit usage and flag high-usage users')
@@ -203,7 +209,7 @@ def main():
     output_file = args.output_file
     if not output_file:
         current_date = datetime.now().strftime("%Y-%m-%d")
-        output_file = f"credit_usage_report_{current_date}.csv"
+        output_file = os.path.join(OUTPUT_DIR, f"credit_usage_report_{current_date}.csv")
     
     # Read usage data
     df = read_usage_data(input_file)

@@ -7,6 +7,12 @@ import datetime
 from collections import defaultdict
 from dotenv import load_dotenv
 
+# Define output directory
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'output')
+
+# Ensure output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -49,6 +55,16 @@ def parse_date(date_str):
         return datetime.datetime.strptime(date_str, "%Y-%m-%d").strftime("%Y-%m-%d")
     except ValueError:
         raise ValueError(f"Invalid date format: {date_str}. Please use YYYY-MM-DD format.")
+
+def find_latest_email_mapping_file():
+    """Find the latest email_api_mapping file in the output directory"""
+    import glob
+    pattern = os.path.join(OUTPUT_DIR, 'email_api_mapping_*.json')
+    files = glob.glob(pattern)
+    if not files:
+        return None
+    # Sort by filename (which includes date) and return the latest
+    return sorted(files)[-1]
 
 # Read API keys and emails from JSON file
 def read_api_keys_from_json(json_file_path):
@@ -157,8 +173,8 @@ def main():
                         help='Start date in YYYY-MM-DD format (default: Sunday of current week)')
     parser.add_argument('--end-date', type=str, default=get_default_end_date(),
                         help='End date in YYYY-MM-DD format (default: today)')
-    parser.add_argument('--json-file', type=str, default='unique_emails.json',
-                        help='JSON file with email:api_key pairs (default: unique_emails.json)')
+    parser.add_argument('--json-file', type=str, default=None,
+                        help='JSON file with email:api_key pairs (default: latest email_api_mapping file in output dir)')
     args = parser.parse_args()
     
     # Validate and parse dates
@@ -170,8 +186,17 @@ def main():
         print(f"Error: {e}")
         return
     
+    # Determine JSON file to use
+    json_file = args.json_file
+    if not json_file:
+        json_file = find_latest_email_mapping_file()
+        if not json_file:
+            print("Error: No email_api_mapping_*.json files found in output directory")
+            return
+        print(f"Using latest email mapping file: {json_file}")
+    
     # Load API keys and emails from JSON
-    API_KEY_EMAIL_MAP = read_api_keys_from_json(args.json_file)
+    API_KEY_EMAIL_MAP = read_api_keys_from_json(json_file)
     API_KEYS = list(API_KEY_EMAIL_MAP.keys())
     
     if not API_KEYS:
@@ -238,13 +263,13 @@ def main():
     current_date = datetime.now().strftime("%Y-%m-%d")
     
     # Save all responses to file
-    json_filename = f"cascade_api_raw_responses_{current_date}.json"
+    json_filename = os.path.join(OUTPUT_DIR, f"cascade_api_raw_responses_{current_date}.json")
     with open(json_filename, "w") as f:
         json.dump(all_responses, f, indent=2)
     print(f"All responses saved to {json_filename}")
     
     # Output to CSV
-    csv_filename = f"cascade_usage_by_model_date_{current_date}.csv"
+    csv_filename = os.path.join(OUTPUT_DIR, f"cascade_usage_by_model_date_{current_date}.csv")
     
     # Divide sum_prompt_credits and sum_flex_credits by 100 before writing to CSV
     for key in aggregated_data:
@@ -273,7 +298,7 @@ def main():
         api_key_stats[api_key]["email"] = data['email']
     
     # Create a summary CSV file
-    summary_csv_filename = f"cascade_usage_by_user_{current_date}.csv"
+    summary_csv_filename = os.path.join(OUTPUT_DIR, f"cascade_usage_by_user_{current_date}.csv")
     with open(summary_csv_filename, 'w', newline='') as csvfile:
         fieldnames = ['api_key', 'email', 'total_prompts', 'total_flex_credits', 'total_prompt_credits']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

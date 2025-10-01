@@ -10,24 +10,25 @@ The Credit Usage Monitor analyzes user credit usage data from Cascade Analytics 
 
 The complete credit monitoring workflow consists of three main scripts that work together:
 
-### 1. `get_unique_emails.py` (Email & API Key Collection)
+### 1. `email_api_mapping.py` (Email & API Key Collection)
 **Purpose**: Fetches and maps user email addresses to their corresponding API keys
 **What it does**:
 - Queries the Cascade Analytics API to retrieve user data
 - Extracts unique email addresses and their associated API keys
-- Generates a JSON file mapping emails to API keys (e.g., `unique_emails_YYYY-MM-DD.json`)
+- Generates a JSON file mapping emails to API keys (e.g., `email_api_mapping_YYYY-MM-DD.json`)
 - Supports date range filtering for targeted analysis
 
-### 2. `cascade_usage_analyzer.py` (Usage Data Analysis)
+### 2. `AnalyticScripts.cascade_usage_analyzer` (Usage Data Analysis)
 **Purpose**: Analyzes credit usage data for each user
 **What it does**:
 - Reads the email-to-API-key mapping from the JSON file
 - Fetches detailed usage data from the Cascade Analytics API for each API key
 - Aggregates usage data by user, model, and date
 - Calculates total prompt credits used per user
-- Generates two output files:
+- Generates three output files:
   - Raw API responses: `cascade_api_raw_responses_YYYY-MM-DD.json`
   - User summary: `cascade_usage_by_user_YYYY-MM-DD.csv`
+  - Model usage: `cascade_usage_by_model_date_YYYY-MM-DD.csv`
 
 ### 3. `credit_usage_monitor.py` (Credit Limit Monitoring)
 **Purpose**: Monitors users against credit limits and generates alerts

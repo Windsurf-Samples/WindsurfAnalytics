@@ -39,16 +39,35 @@ further analysis and visualization of Cascade usage patterns.
 
 import json
 import csv
+import os
 import pandas as pd
 from collections import defaultdict
 from datetime import datetime
 
+# Define output directory
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'output')
+
+# Ensure output directory exists
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
 def load_json_results(filename="cascade_analytics_results.json"):
     """Load the JSON results file."""
-    with open(filename, 'r') as f:
+    # Check if the file exists in the current directory or in the output directory
+    if os.path.exists(filename):
+        file_path = filename
+    elif os.path.exists(os.path.join(OUTPUT_DIR, filename)):
+        file_path = os.path.join(OUTPUT_DIR, filename)
+    else:
+        raise FileNotFoundError(f"Could not find {filename} in current directory or output directory")
+        
+    with open(file_path, 'r') as f:
         return json.load(f)
 
-def generate_daily_csv(data, output_file="daily_user_analytics.csv"):
+def generate_daily_csv(data, output_file=None):
+    """Generate CSV with unique rows per user/date."""
+    if output_file is None:
+        timestamp = datetime.now().strftime("%Y%m%d")
+        output_file = os.path.join(OUTPUT_DIR, f"daily_user_analytics_{timestamp}.csv")
     """
     Generate CSV with unique rows per user/date.
     Columns: user_email, date, linesAccepted, linesSuggested, %percentage accepted, 
@@ -122,7 +141,11 @@ def generate_daily_csv(data, output_file="daily_user_analytics.csv"):
     else:
         print("No daily data found to export")
 
-def generate_model_usage_csv(data, output_file="model_usage_analytics.csv"):
+def generate_model_usage_csv(data, output_file=None):
+    """Generate CSV with model usage data."""
+    if output_file is None:
+        timestamp = datetime.now().strftime("%Y%m%d")
+        output_file = os.path.join(OUTPUT_DIR, f"model_usage_analytics_{timestamp}.csv")
     """
     Generate CSV with unique rows per user/date/model combination.
     Columns: user_email, date, model, messagesSent, promptsUsed
@@ -168,7 +191,11 @@ def generate_model_usage_csv(data, output_file="model_usage_analytics.csv"):
     else:
         print("No model usage data found to export")
 
-def generate_aggregated_csv(data, output_file="aggregated_user_analytics.csv"):
+def generate_aggregated_csv(data, output_file=None):
+    """Generate CSV with aggregated data per user."""
+    if output_file is None:
+        timestamp = datetime.now().strftime("%Y%m%d")
+        output_file = os.path.join(OUTPUT_DIR, f"aggregated_user_analytics_{timestamp}.csv")
     """
     Generate CSV with aggregated data per user.
     Columns: user_email, total_linesAccepted, total_linesSuggested, total_percentageAccepted,

@@ -1,0 +1,11 @@
+# Core dependencies for all scripts
+requests>=2.31.0
+python-dotenv>=1.0.0
+pandas>=2.0.0
+
+# Additional dependencies for specific scripts
+pathlib>=1.0.1  # For FindActiveUsers/check_user_activity.py
+
+# Development dependencies (optional)
+pytest>=7.0.0  # For running tests
+black>=23.0.0  # For code formatting
