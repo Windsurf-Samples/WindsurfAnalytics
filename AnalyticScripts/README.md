@@ -4,6 +4,52 @@ This directory contains shared utility scripts used across multiple Windsurf Ana
 
 ## Available Scripts
 
+### `command_bytes_analyzer.py`
+
+**Purpose**: Analyzes Windsurf command bytes data to track code generation and editing activity.
+
+**Key Features**:
+- Retrieves command data from the Windsurf Analytics API
+- Analyzes bytes added, bytes removed, lines added, and lines removed
+- Supports filtering by email addresses (automatically converts to API keys)
+- Generates CSV reports by user, language, and date
+- CLI interface with flexible options
+
+**Usage**:
+```bash
+# Analyze specific user by email
+python command_bytes_analyzer.py --emails user@company.com
+
+# Analyze multiple users
+python command_bytes_analyzer.py --emails user1@company.com user2@company.com
+
+# Custom date range
+python command_bytes_analyzer.py --start-date 2025-10-01 --end-date 2025-10-29
+
+# Direct API key usage
+python command_bytes_analyzer.py --api-keys <uuid>
+```
+
+### `autocomplete_analyzer.py`
+
+**Purpose**: Analyzes Windsurf autocomplete/tab acceptance data to track code completion usage.
+
+**Key Features**:
+- Retrieves autocomplete data from the Windsurf Analytics API
+- Analyzes tab acceptances, lines accepted, and bytes accepted
+- Supports email-based filtering with automatic API key conversion
+- Generates reports by user, language, and hour of day
+- CLI interface matching command_bytes_analyzer
+
+**Usage**:
+```bash
+# Analyze autocomplete acceptances by email
+python autocomplete_analyzer.py --emails user@company.com
+
+# Include JSON output
+python autocomplete_analyzer.py --emails user@company.com --output-json
+```
+
 ### `email_api_mapping.py`
 
 **Purpose**: Maps user email addresses to their corresponding API keys by querying the Cascade Analytics API.
@@ -82,6 +128,21 @@ user_data, raw_responses = analyze_usage_data(api_key_email_map, "2025-09-01", "
 # Step 4: Generate a summary report
 summary_file = save_user_summary(user_data)
 print(f"Summary saved to {summary_file}")
+```
+
+## Examples Directory
+
+The `examples/` subdirectory contains usage examples for the analytics scripts:
+
+- **`command_bytes_example.py`** - Demonstrates how to use the command_bytes_analyzer module programmatically
+- **`autocomplete_example.py`** - Shows how to use the autocomplete_analyzer module in your own scripts
+- **`usage_example.py`** - General examples of using the email_api_mapping functions
+
+Run examples from the AnalyticScripts directory:
+```bash
+cd AnalyticScripts
+python examples/command_bytes_example.py
+python examples/autocomplete_example.py
 ```
 
 ## Best Practices for Using These Scripts
