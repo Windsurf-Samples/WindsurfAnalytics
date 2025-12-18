@@ -216,17 +216,41 @@ def get_configs_for_emails(emails):
     return configs
 
 
+def get_credit_cap_from_config(config):
+    """
+    Extract the credit cap value from a config response.
+    
+    The API returns 'addOnCreditCap' (camelCase) but we handle both formats
+    for robustness.
+    
+    Args:
+        config: The API response dictionary
+        
+    Returns:
+        The credit cap value, or None if not configured
+    """
+    if config is None:
+        return None
+    # API returns camelCase 'addOnCreditCap'
+    if 'addOnCreditCap' in config:
+        return config['addOnCreditCap']
+    # Also check snake_case for robustness
+    if 'add_on_credit_cap' in config:
+        return config['add_on_credit_cap']
+    return None
+
+
 def cmd_get(args):
     """Handle the 'get' command."""
     validate_service_key()
     
     config = get_user_usage_config(args.email)
     if config is not None:
-        if 'add_on_credit_cap' in config:
-            print(f"User: {args.email}")
-            print(f"Add-on Credit Cap: {config['add_on_credit_cap']}")
+        credit_cap = get_credit_cap_from_config(config)
+        print(f"User: {args.email}")
+        if credit_cap is not None:
+            print(f"Add-on Credit Cap: {credit_cap}")
         else:
-            print(f"User: {args.email}")
             print("Add-on Credit Cap: Not configured (no cap set)")
         
         if args.json:
@@ -241,8 +265,9 @@ def cmd_set(args):
     print(f"\nGetting current configuration for {args.email}...")
     current_config = get_user_usage_config(args.email)
     if current_config is not None:
-        if 'add_on_credit_cap' in current_config:
-            print(f"Current credit cap: {current_config['add_on_credit_cap']}")
+        current_cap = get_credit_cap_from_config(current_config)
+        if current_cap is not None:
+            print(f"Current credit cap: {current_cap}")
         else:
             print("Current credit cap: Not configured")
     
@@ -263,8 +288,9 @@ def cmd_set(args):
         print(f"\nVerifying change was applied...")
         new_config = get_user_usage_config(args.email)
         if new_config is not None:
-            if 'add_on_credit_cap' in new_config:
-                print(f"New credit cap: {new_config['add_on_credit_cap']}")
+            new_cap = get_credit_cap_from_config(new_config)
+            if new_cap is not None:
+                print(f"New credit cap: {new_cap}")
             else:
                 print("Warning: Credit cap not found in response after setting")
         
@@ -286,8 +312,9 @@ def cmd_clear(args):
     print(f"\nGetting current configuration for {args.email}...")
     current_config = get_user_usage_config(args.email)
     if current_config is not None:
-        if 'add_on_credit_cap' in current_config:
-            print(f"Current credit cap: {current_config['add_on_credit_cap']}")
+        current_cap = get_credit_cap_from_config(current_config)
+        if current_cap is not None:
+            print(f"Current credit cap: {current_cap}")
         else:
             print("Current credit cap: Not configured")
     
@@ -308,8 +335,9 @@ def cmd_clear(args):
         print(f"\nVerifying change was applied...")
         new_config = get_user_usage_config(args.email)
         if new_config is not None:
-            if 'add_on_credit_cap' in new_config:
-                print(f"Warning: Credit cap still present: {new_config['add_on_credit_cap']}")
+            new_cap = get_credit_cap_from_config(new_config)
+            if new_cap is not None:
+                print(f"Warning: Credit cap still present: {new_cap}")
             else:
                 print("Credit cap successfully cleared")
         
