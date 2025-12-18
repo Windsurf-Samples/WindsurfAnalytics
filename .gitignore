@@ -3,6 +3,7 @@
 
 # Environment variables
 .env
+.envrc
 
 # Python cache files
 __pycache__/
