@@ -47,7 +47,20 @@ Identifies which users have been active within a specified time period.
 - `user_activity_report_YYYY-MM-DD.json` - Detailed activity report
 - Console summary of active and inactive users
 
-### 📚 **AnalyticScripts** - Shared Analytics Library
+### � **DailyReport** - Combined Activity & Credit Report
+Generates a comprehensive daily report combining Cascade usage metrics (lines, messages, tools) and credit consumption into a single per-user view.
+
+**What it tracks:**
+- Lines suggested vs. accepted with acceptance percentage
+- Messages sent, prompts used, model breakdown
+- Tool usage statistics
+- Flex and prompt credit consumption per day
+
+**Key outputs:**
+- `daily_combined_report_YYYY-MM-DD.csv` - Per-user daily breakdown
+- `daily_combined_summary_YYYY-MM-DD.csv` - Per-user aggregated totals
+
+### �📚 **AnalyticScripts** - Shared Analytics Library
 Centralized library of shared functions used across all analytics modules.
 
 **Key components:**
@@ -87,6 +100,7 @@ For detailed usage instructions, see the README files in each folder:
 - [TeamUsage README](TeamUsage/README.md)
 - [UserCreditMonitoring README](UserCreditMonitoring/README_credit_usage_monitor.md)
 - [FindActiveUsers README](FindActiveUsers/README.md)
+- [DailyReport README](DailyReport/README.md)
 - [AnalyticScripts README](AnalyticScripts/README.md)
 
 ## Contributing
